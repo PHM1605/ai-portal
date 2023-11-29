@@ -1,8 +1,5 @@
-from fastapi import FastAPI, File
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-import io, base64, cv2
-import numpy as np
 
 app = FastAPI()
 
@@ -14,12 +11,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"])
 
-@app.post("/uploadImage")
-async def uploadImage(image: bytes = File(...)):
-    img_stream = io.BytesIO(image)
-    img = cv2.imdecode(np.frombuffer(img_stream.read(), np.uint8), 1)
-    outp_img_path = 'test.png'
-    cv2.imwrite(outp_img_path, img)
-    with open(outp_img_path, 'rb') as f:
-        base64img = base64.b64encode(f.read())
-    return base64img
+@app.post("/uploadImages")
+async def uploadImages(images: list[UploadFile]):
+    ret = []
+    for img_upload in images:
+        ret.append(img_upload.filename)
+        data = await img_upload.read()
+        outp_img_path = img_upload.filename
+        with open(outp_img_path, 'wb') as f:
+            f.write(data)
+    return {'images': ret}
